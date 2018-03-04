@@ -1,19 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.4</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>programmersdigest.Injector</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>0.4.0</Version>
-    <Authors>Michael Sperber</Authors>
+    <Version>0.4.3</Version>
+    <Authors>Michael Sperber (programmersidgest.de)</Authors>
     <Company>programmersdigest.de</Company>
     <Description>A simple dependency injection container with focus on the bare necessities.</Description>
-    <RepositoryUrl></RepositoryUrl>
-    <RepositoryType></RepositoryType>
+    <RepositoryUrl>https://github.com/programmersdigest/Injector</RepositoryUrl>
+    <RepositoryType>github</RepositoryType>
     <PackageProjectUrl>https://github.com/programmersdigest/Injector</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/programmersdigest/Injector/blob/master/LICENSE</PackageLicenseUrl>
     <Copyright>Copyright © Michael Sperber (programmersdigest.de) 2018</Copyright>
+    <PackageTags>IoC Inversion of Control DI Dependency Injection Container</PackageTags>
+    <AssemblyVersion>0.4.3.0</AssemblyVersion>
   </PropertyGroup>
 
 </Project>

@@ -42,15 +42,12 @@ namespace programmersdigest.Injector {
         }
 
         public object Get(Type contract) {
-            if (contract == null)
-                return null;
-
             if (contract.GetTypeInfo().IsGenericType && contract.GetGenericTypeDefinition() == typeof(Builder<>)) {
                 return Activator.CreateInstance(contract, this);
             }
 
             if (!_registry.TryGetValue(contract, out var item)) {
-                return null;
+                throw new InvalidOperationException($"Unknown contract: \"{contract.Name}\". Make sure the contract has been registered before retrieving an instance.");
             }
 
             if (item.IsSingleton) {
@@ -59,7 +56,7 @@ namespace programmersdigest.Injector {
             else {
                 var type = item.Value as Type;
                 if (type == null) {
-                    return null;
+                    throw new InvalidOperationException($"The contract \"{contract.Name}\" returned an invalid item. Please check your registrations.");
                 }
 
                 return MakeInstance(type);
@@ -72,7 +69,8 @@ namespace programmersdigest.Injector {
 
         public object MakeInstance(Type type) {
             // Try to find a constructor with DIAttribute or use default constructor.
-            var ctors = type.GetTypeInfo().DeclaredConstructors;
+            var ctors = type.GetTypeInfo().DeclaredConstructors
+                            .Where(c => c.IsPublic && !c.IsStatic);
 
             ConstructorInfo ctor = null;
             if (ctors.Count() == 1) {
@@ -82,8 +80,9 @@ namespace programmersdigest.Injector {
                 ctor = ctors.FirstOrDefault(c => c.GetCustomAttributes(typeof(DIAttribute), false).Any());
             }
 
-            if (ctor == null)
-                return null;    // Cannot find a matching constructor.
+            if (ctor == null) {
+                throw new InvalidOperationException($"Unable to find a matching constructor for contract \"{type.Name}\". Please annotate the constructor to be used with the {nameof(DIAttribute)}");
+            }
 
             // Fill constructor parameters.
             var args = ctor.GetParameters();
