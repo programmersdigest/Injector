@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net45;</TargetFrameworks>
     <RootNamespace>programmersdigest.Injector</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>0.4.3</Version>
+    <Version>0.4.4</Version>
     <Authors>Michael Sperber (programmersidgest.de)</Authors>
     <Company>programmersdigest.de</Company>
     <Description>A simple dependency injection container with focus on the bare necessities.</Description>
@@ -15,7 +14,10 @@
     <PackageLicenseUrl>https://github.com/programmersdigest/Injector/blob/master/LICENSE</PackageLicenseUrl>
     <Copyright>Copyright © Michael Sperber (programmersdigest.de) 2018</Copyright>
     <PackageTags>IoC Inversion of Control DI Dependency Injection Container</PackageTags>
-    <AssemblyVersion>0.4.3.0</AssemblyVersion>
+    <PackageIconUrl>https://raw.githubusercontent.com/programmersdigest/Injector/master/Resources/Icon.png</PackageIconUrl>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+    <DefineConstants>NETSTANDARD</DefineConstants>
+  </PropertyGroup>
 </Project>
