@@ -1,7 +1,9 @@
 ﻿using System;
 
-namespace programmersdigest.Injector {
+namespace programmersdigest.Injector
+{
     [AttributeUsage(AttributeTargets.Constructor)]
-    public class DIAttribute : Attribute {
+    public class DIAttribute : Attribute
+    {
     }
 }

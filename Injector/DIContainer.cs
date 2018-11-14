@@ -4,12 +4,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace programmersdigest.Injector {
-    public class DIContainer {
+namespace programmersdigest.Injector
+{
+    public class DIContainer
+    {
         private ConcurrentDictionary<Type, DIItem> _registry = new ConcurrentDictionary<Type, DIItem>();
 
-        public object RegisterSingleton(Type contract, object instance = null) {
-            if (instance == null) {
+        public object RegisterSingleton(Type contract, object instance = null)
+        {
+            if (instance == null)
+            {
                 instance = MakeInstance(contract);
             }
 
@@ -19,43 +23,54 @@ namespace programmersdigest.Injector {
             return instance;
         }
 
-        public TContract RegisterSingleton<TContract>(TContract instance = null) where TContract : class {
+        public TContract RegisterSingleton<TContract>(TContract instance = null) where TContract : class
+        {
             return (TContract)RegisterSingleton(typeof(TContract), instance);
         }
 
-        public TContract RegisterSingleton<TContract, TType>() where TContract : class where TType : TContract {
+        public TContract RegisterSingleton<TContract, TType>() where TContract : class where TType : TContract
+        {
             var instance = MakeInstance(typeof(TType)) as TContract;
             return RegisterSingleton(instance);
         }
 
-        public void RegisterType(Type contract, Type type) {
+        public void RegisterType(Type contract, Type type)
+        {
             var item = new DIItem(type, false);
             _registry.AddOrUpdate(contract, item, (key, old) => item);
         }
 
-        public void RegisterType<TContract, TType>() where TContract : class where TType : TContract {
+        public void RegisterType<TContract, TType>() where TContract : class where TType : TContract
+        {
             RegisterType(typeof(TContract), typeof(TType));
         }
 
-        public void RegisterType<TType>() where TType : class {
+        public void RegisterType<TType>() where TType : class
+        {
             RegisterType(typeof(TType), typeof(TType));
         }
 
-        public object Get(Type contract) {
-            if (contract.GetTypeInfo().IsGenericType && contract.GetGenericTypeDefinition() == typeof(Builder<>)) {
+        public object Get(Type contract)
+        {
+            if (contract.GetTypeInfo().IsGenericType && contract.GetGenericTypeDefinition() == typeof(Builder<>))
+            {
                 return Activator.CreateInstance(contract, this);
             }
 
-            if (!_registry.TryGetValue(contract, out var item)) {
+            if (!_registry.TryGetValue(contract, out var item))
+            {
                 throw new InvalidOperationException($"Unknown contract: \"{contract.Name}\". Make sure the contract has been registered before retrieving an instance.");
             }
 
-            if (item.IsSingleton) {
+            if (item.IsSingleton)
+            {
                 return item.Value;
             }
-            else {
+            else
+            {
                 var type = item.Value as Type;
-                if (type == null) {
+                if (type == null)
+                {
                     throw new InvalidOperationException($"The contract \"{contract.Name}\" returned an invalid item. Please check your registrations.");
                 }
 
@@ -63,24 +78,29 @@ namespace programmersdigest.Injector {
             }
         }
 
-        public TContract Get<TContract>() where TContract : class {
+        public TContract Get<TContract>() where TContract : class
+        {
             return (TContract)Get(typeof(TContract));
         }
 
-        public object MakeInstance(Type type) {
+        public object MakeInstance(Type type)
+        {
             // Try to find a constructor with DIAttribute or use default constructor.
             var ctors = type.GetTypeInfo().DeclaredConstructors
                             .Where(c => c.IsPublic && !c.IsStatic);
 
             ConstructorInfo ctor = null;
-            if (ctors.Count() == 1) {
+            if (ctors.Count() == 1)
+            {
                 ctor = ctors.First();
             }
-            else {
+            else
+            {
                 ctor = ctors.FirstOrDefault(c => c.GetCustomAttributes(typeof(DIAttribute), false).Any());
             }
 
-            if (ctor == null) {
+            if (ctor == null)
+            {
                 throw new InvalidOperationException($"Unable to find a matching constructor for contract \"{type.Name}\". Please annotate the constructor to be used with the {nameof(DIAttribute)}");
             }
 
@@ -94,7 +114,8 @@ namespace programmersdigest.Injector {
             return Activator.CreateInstance(type, values.ToArray());
         }
 
-        public T MakeInstance<T>() where T : class {
+        public T MakeInstance<T>() where T : class
+        {
             return (T)MakeInstance(typeof(T));
         }
     }
