@@ -4,7 +4,7 @@
     <RootNamespace>programmersdigest.Injector</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Authors>Michael Sperber (programmersidgest.de)</Authors>
     <Company>programmersdigest.de</Company>
     <Description>A simple dependency injection container with focus on the bare necessities.</Description>
@@ -17,8 +17,8 @@
     <PackageIconUrl>https://raw.githubusercontent.com/programmersdigest/Injector/master/Resources/Icon.png</PackageIconUrl>
     <PackageId>programmersdigest.Injector</PackageId>
     <Product>programmersdigest.Injector</Product>
-    <AssemblyVersion>0.5.0.0</AssemblyVersion>
-    <FileVersion>0.5.0.0</FileVersion>
+    <AssemblyVersion>0.6.0.0</AssemblyVersion>
+    <FileVersion>0.6.0.0</FileVersion>
     <AssemblyName>programmersdigest.Injector</AssemblyName>
   </PropertyGroup>
 
