@@ -18,6 +18,31 @@
         }
     }
 
+    internal class ClassWithMultipleConstructorsAndDIAttribute
+    {
+        public ClassWithMultipleConstructorsAndDIAttribute(string testString)
+        {
+        }
+
+        [DI]
+        public ClassWithMultipleConstructorsAndDIAttribute()
+        {
+        }
+    }
+
+    internal class ClassWithAmbiguousDIAttributes
+    {
+        [DI]
+        public ClassWithAmbiguousDIAttributes()
+        {
+        }
+
+        [DI]
+        public ClassWithAmbiguousDIAttributes(string testString)
+        {
+        }
+    }
+
     internal class ClassWithSingleConstructor
     {
         public ClassWithSingleConstructor()
@@ -28,6 +53,21 @@
     internal class ClassWithSingleTypeparam<T>
     {
         public ClassWithSingleTypeparam()
+        {
+        }
+    }
+
+    internal interface IClassWithSingleTypeparamAndInterface<T> : System.IDisposable where T : ClassWithSingleConstructor
+    {
+    }
+
+    internal class ClassWithSingleTypeparamAndInterface<T> : IClassWithSingleTypeparamAndInterface<T> where T : ClassWithSingleConstructor
+    {
+        public ClassWithSingleTypeparamAndInterface()
+        {
+        }
+
+        public void Dispose()
         {
         }
     }
@@ -68,7 +108,7 @@
     {
     }
 
-    internal class ClassWithInterface2 :IClassWithInterface
+    internal class ClassWithInterface2 : IClassWithInterface
     {
     }
 }

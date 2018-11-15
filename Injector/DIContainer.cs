@@ -43,14 +43,29 @@ namespace programmersdigest.Injector
             {
                 throw new ArgumentNullException(nameof(type));
             }
-
-            if (!contract.IsAssignableFrom(type))
+            
+            IRegistrationItem registrationItem;
+            if (contract.IsGenericTypeDefinition)
             {
-                throw new ArgumentOutOfRangeException(nameof(type), $"Type {type.Name} must inherit of or implement contract {contract.Name}.");
-            }
+                if (!contract.IsAssignableFrom(type) &&
+                    !type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == contract))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(type), $"Generic type definition {type.Name} must inherit of or implement contract {contract.Name}.");
+                }
 
-            var item = new TypeRegistrationItem(type);
-            _registry.AddOrUpdate(contract, item, (key, old) => item);
+                registrationItem = new GenericTypeDefinitionRegistrationItem(type);
+            }
+            else
+            {
+                if (!contract.IsAssignableFrom(type))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(type), $"Type {type.Name} must inherit of or implement contract {contract.Name}.");
+                }
+
+                registrationItem = new TypeRegistrationItem(type);
+            }
+            
+            _registry.AddOrUpdate(contract, registrationItem, (key, old) => registrationItem);
         }
 
         /// <summary>
@@ -188,20 +203,15 @@ namespace programmersdigest.Injector
             {
                 return Activator.CreateInstance(contract, this);
             }
-
-            if (!_registry.TryGetValue(contract, out var item))
+            
+            if (_registry.TryGetValue(contract, out var registrationItem) ||
+                (contract.IsGenericType && _registry.TryGetValue(contract.GetGenericTypeDefinition(), out registrationItem)))
+            {
+                return GetOrMakeInstanceFromRegistrationItem(contract, registrationItem);
+            }
+            else
             {
                 throw new InvalidOperationException($"Unknown contract: \"{contract.Name}\". Make sure the contract has been registered before retrieving an instance.");
-            }
-
-            switch (item)
-            {
-                case SingletonRegistrationItem singletonRegistrationItem:
-                    return singletonRegistrationItem.Instance;
-                case TypeRegistrationItem typeRegistrationItem:
-                    return MakeInstance(typeRegistrationItem.Type);
-                default:
-                    throw new InvalidOperationException($"The contract \"{contract.Name}\" resulted in an invalid registration.");
             }
         }
 
@@ -268,6 +278,36 @@ namespace programmersdigest.Injector
         public T MakeInstance<T>() where T : class
         {
             return (T)MakeInstance(typeof(T));
+        }
+
+        /// <summary>
+        /// Gets or creates the instance registered in the given registration item.
+        /// If the registration item is a <see cref="SingletonRegistrationItem"/>, the singleton
+        /// instance gets returned. If it is a <see cref="TypeRegistrationItem"/>, an instance
+        /// of the given type is created and returned. If it is a <see cref="GenericTypeDefinitionRegistrationItem"/>,
+        /// the generic type mathing the contracts generic arguments is created from the generic
+        /// type definition and an instance of this generic type is returned.
+        /// </summary>
+        /// <param name="contract">The contract under which the <paramref name="registrationItem"/> is registered.</param>
+        /// <param name="registrationItem">The registration item of which to get or create an instance.</param>
+        /// <returns>The prepared instance.</returns>
+        /// <exception cref="InvalidOperationException">In case an unknown kind of registration item is provided (should never happen).</exception>
+        private object GetOrMakeInstanceFromRegistrationItem(Type contract, IRegistrationItem registrationItem)
+        {
+            switch (registrationItem)
+            {
+                case SingletonRegistrationItem singletonRegistrationItem:
+                    return singletonRegistrationItem.Instance;
+                case TypeRegistrationItem typeRegistrationItem:
+                    return MakeInstance(typeRegistrationItem.Type);
+                case GenericTypeDefinitionRegistrationItem genericTypeDefinitionRegistrationItem:
+                    var type = genericTypeDefinitionRegistrationItem
+                        .GenericTypeDefinition
+                        .MakeGenericType(contract.GetGenericArguments());
+                    return MakeInstance(type);
+                default:
+                    throw new InvalidOperationException($"The contract \"{contract.Name}\" resulted in an invalid registration.");
+            }
         }
     }
 }

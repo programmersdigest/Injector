@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using programmersdigest.Injector;
 using System;
 
 namespace programmersdigest.Injector.Tests
@@ -11,7 +10,7 @@ namespace programmersdigest.Injector.Tests
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void Create_TypeIsNull_ShouldThrowArgumentNullException()
+        public void MakeInstance_TypeIsNull_ShouldThrowArgumentNullException()
         {
             var container = new DIContainer();
             container.MakeInstance(null);
@@ -19,7 +18,7 @@ namespace programmersdigest.Injector.Tests
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
-        public void Create_TypeDoesNotImplementConstructor_ShouldInvalidOperationException()
+        public void MakeInstance_TypeDoesNotImplementConstructor_ShouldInvalidOperationException()
         {
             var container = new DIContainer();
             container.MakeInstance(typeof(ClassWithoutConstructor));
@@ -27,17 +26,30 @@ namespace programmersdigest.Injector.Tests
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
-        public void Create_TypeHasMultipleConstructors_ShouldThrowInvalidOperationException()
+        public void MakeInstance_TypeHasMultipleConstructors_ShouldThrowInvalidOperationException()
         {
             var container = new DIContainer();
             container.MakeInstance(typeof(ClassWithMultipleConstructors));
+        }
+
+        [TestMethod]
+        public void MakeInstance_TypeHasAmbiguousDIAttributes_ShouldUseFirstConstructor()
+        {
+            var container = new DIContainer();
+            // The following line would fail, because the second constructor is a
+            // ClassWithAmbiguousDIAttributes(string testString) in which testString
+            // cannot be provided by the DIContainer.
+            var instance = container.MakeInstance(typeof(ClassWithAmbiguousDIAttributes));
+
+            Assert.IsNotNull(instance);
         }
 
         [DataTestMethod]
         [DataRow(typeof(ClassWithSingleConstructor))]
         [DataRow(typeof(ClassWithSingleTypeparam<string>))]
         [DataRow(typeof(ClassWithMultipleTypeparams<int, DateTime, string, object>))]
-        public void Create_VariousTypes_ShouldCreateInstances(Type type)
+        [DataRow(typeof(ClassWithMultipleConstructorsAndDIAttribute))]
+        public void MakeInstance_VariousTypes_ShouldCreateInstances(Type type)
         {
             var container = new DIContainer();
             var instance = container.MakeInstance(type);
@@ -47,7 +59,7 @@ namespace programmersdigest.Injector.Tests
         }
 
         [TestMethod]
-        public void Create_TypeRequiresRegisteredType_ShouldCreateInstance()
+        public void MakeInstance_TypeRequiresRegisteredType_ShouldCreateInstance()
         {
             var container = new DIContainer();
             container.RegisterType<ClassWithSingleConstructor, ClassWithSingleConstructor>();
@@ -59,7 +71,7 @@ namespace programmersdigest.Injector.Tests
         }
 
         [TestMethod]
-        public void Create_TypeRequiresRegisteredSingleton_ShouldCreateInstance()
+        public void MakeInstance_TypeRequiresRegisteredSingleton_ShouldCreateInstance()
         {
             var container = new DIContainer();
             var classWithSingleConstructor = new ClassWithSingleConstructor();
@@ -72,7 +84,7 @@ namespace programmersdigest.Injector.Tests
         }
 
         [TestMethod]
-        public void Create_TypeRequiresRegisteredTypeWithTypeparam_ShouldCreateInstance()
+        public void MakeInstance_TypeRequiresRegisteredTypeWithTypeparam_ShouldCreateInstance()
         {
             var container = new DIContainer();
             container.RegisterType<ClassWithSingleTypeparam<string>, ClassWithSingleTypeparam<string>>();
@@ -84,7 +96,7 @@ namespace programmersdigest.Injector.Tests
         }
 
         [TestMethod]
-        public void Create_TypeRequiresMultipleRegisteredTypes_ShouldCreateInstance()
+        public void MakeInstance_TypeRequiresMultipleRegisteredTypes_ShouldCreateInstance()
         {
             var container = new DIContainer();
             container.RegisterType<ClassWithSingleConstructor, ClassWithSingleConstructor>();
@@ -123,6 +135,14 @@ namespace programmersdigest.Injector.Tests
             var container = new DIContainer();
             container.RegisterType(typeof(ClassWithSingleConstructor), typeof(ClassExpectingInstanceWithTypeparam));
         }
+        
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void RegisterType_GenericTypeDefinitionDoesNotImplementContract_ShouldThrowArgumentOutOfRangeException()
+        {
+            var container = new DIContainer();
+            container.RegisterType(typeof(IClassWithSingleTypeparamAndInterface<>), typeof(ClassWithSingleTypeparam<>));
+        }
 
         [TestMethod]
         public void RegisterType_ContractHasAlreadyBeenRegistered_ShouldRegisterNewType()
@@ -143,6 +163,7 @@ namespace programmersdigest.Injector.Tests
         [DataRow(typeof(ClassExpectingInstanceWithTypeparam), typeof(ClassExpectingInstanceWithTypeparam))]
         [DataRow(typeof(IClassWithInterface), typeof(ClassWithInterface))]
         [DataRow(typeof(ClassWithSingleTypeparam<>), typeof(ClassWithSingleTypeparam<>))]
+        [DataRow(typeof(IClassWithSingleTypeparamAndInterface<>), typeof(ClassWithSingleTypeparamAndInterface<>))]
         public void RegisterType_VariousContractsAndTypes_ShouldRegisterItems(Type contract, Type type)
         {
             var container = new DIContainer();
@@ -286,6 +307,66 @@ namespace programmersdigest.Injector.Tests
             var instance = container.Get<IClassWithInterface>();
 
             Assert.AreEqual(registeredInstance, instance);
+        }
+
+        [TestMethod]
+        public void Get_RegistrationIsTypeWithTypeParam_ShouldReturnSpecificTypedInstance()
+        {
+            var container = new DIContainer();
+            container.RegisterType<ClassWithSingleTypeparam<string>>();
+
+            var instance = container.Get<ClassWithSingleTypeparam<string>>();
+
+            Assert.IsNotNull(instance);
+            Assert.IsInstanceOfType(instance, typeof(ClassWithSingleTypeparam<string>));
+        }
+        
+        [TestMethod]
+        public void Get_TypeRequiresTypeParam_ShouldReturnSpecificTypedInstance()
+        {
+            var container = new DIContainer();
+            container.RegisterType(typeof(IClassWithSingleTypeparamAndInterface<>), typeof(ClassWithSingleTypeparamAndInterface<>));
+
+            var instance = container.Get<IClassWithSingleTypeparamAndInterface<ClassWithSingleConstructor>>();
+
+            Assert.IsNotNull(instance);
+            Assert.IsInstanceOfType(instance, typeof(ClassWithSingleTypeparamAndInterface<ClassWithSingleConstructor>));
+        }
+
+        [TestMethod]
+        public void Get_BuilderForType_ShouldReturnBuilderForType()
+        {
+            var container = new DIContainer();
+            container.RegisterType<ClassWithSingleConstructor>();
+
+            var instance = container.Get<Builder<ClassWithSingleConstructor>>();
+
+            Assert.IsNotNull(instance);
+            Assert.IsInstanceOfType(instance, typeof(Builder<ClassWithSingleConstructor>));
+        }
+
+        [TestMethod]
+        public void Get_BuilderForSingletonType_ShouldReturnBuilderForSingletonType()
+        {
+            var container = new DIContainer();
+            container.RegisterSingleton<ClassWithSingleConstructor>();
+
+            var instance = container.Get<Builder<ClassWithSingleConstructor>>();
+
+            Assert.IsNotNull(instance);
+            Assert.IsInstanceOfType(instance, typeof(Builder<ClassWithSingleConstructor>));
+        }
+
+        [TestMethod]
+        public void Get_BuilderForTypeThatRequiresTypeParam_ShouldReturnBuilderForSpecificTypedInstance()
+        {
+            var container = new DIContainer();
+            container.RegisterType(typeof(ClassWithSingleTypeparam<>), typeof(ClassWithSingleTypeparam<>));
+
+            var instance = container.Get<Builder<ClassWithSingleTypeparam<int>>>();
+
+            Assert.IsNotNull(instance);
+            Assert.IsInstanceOfType(instance, typeof(Builder<ClassWithSingleTypeparam<int>>));
         }
 
         #endregion
