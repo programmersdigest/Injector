@@ -11,8 +11,7 @@ namespace programmersdigest.Injector
     /// </summary>
     public class DIContainer
     {
-        private ConcurrentDictionary<Type, DIItem> _registry = new ConcurrentDictionary<Type, DIItem>();
-
+        private ConcurrentDictionary<Type, IRegistrationItem> _registry = new ConcurrentDictionary<Type, IRegistrationItem>();
 
         /// <summary>
         /// Registers the given <paramref name="type"/> under the given
@@ -50,7 +49,7 @@ namespace programmersdigest.Injector
                 throw new ArgumentOutOfRangeException(nameof(type), $"Type {type.Name} must inherit of or implement contract {contract.Name}.");
             }
 
-            var item = new DIItem(type, false);
+            var item = new TypeRegistrationItem(type);
             _registry.AddOrUpdate(contract, item, (key, old) => item);
         }
 
@@ -123,7 +122,7 @@ namespace programmersdigest.Injector
                 throw new ArgumentOutOfRangeException(nameof(instance), $"Instance of type {instance.GetType().Name} must inherit of or implement contract {contract.Name}.");
             }
 
-            var item = new DIItem(instance, true);
+            var item = new SingletonRegistrationItem(instance);
             _registry.AddOrUpdate(contract, item, (key, old) => item);
 
             return instance;
@@ -195,19 +194,14 @@ namespace programmersdigest.Injector
                 throw new InvalidOperationException($"Unknown contract: \"{contract.Name}\". Make sure the contract has been registered before retrieving an instance.");
             }
 
-            if (item.IsSingleton)
+            switch (item)
             {
-                return item.Value;
-            }
-            else
-            {
-                var type = item.Value as Type;
-                if (type == null)
-                {
-                    throw new InvalidOperationException($"The contract \"{contract.Name}\" returned an invalid item. Please check your registrations.");
-                }
-
-                return MakeInstance(type);
+                case SingletonRegistrationItem singletonRegistrationItem:
+                    return singletonRegistrationItem.Instance;
+                case TypeRegistrationItem typeRegistrationItem:
+                    return MakeInstance(typeRegistrationItem.Type);
+                default:
+                    throw new InvalidOperationException($"The contract \"{contract.Name}\" resulted in an invalid registration.");
             }
         }
 
@@ -225,7 +219,7 @@ namespace programmersdigest.Injector
         {
             return (TContract)Get(typeof(TContract));
         }
-        
+
         /// <summary>
         /// Creates an instance of the given <paramref name="type"/> using the registered
         /// dependencies for constructor injection.
